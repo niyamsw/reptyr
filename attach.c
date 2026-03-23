@@ -211,11 +211,44 @@ int mmap_scratch(struct ptrace_child *child, child_addr_t *addr) {
     mmap_syscall = ptrace_syscall_numbers(child)->nr_mmap2;
     if (mmap_syscall == -1)
         mmap_syscall = ptrace_syscall_numbers(child)->nr_mmap;
+
+#ifdef __s390x__
+    if (ptrace_syscall_numbers(child)->nr_mmap2 == -1 &&
+            ptrace_syscall_numbers(child)->nr_mmap != -1) {
+        struct mmap_arg_struct {
+            unsigned long addr;
+            unsigned long len;
+            unsigned long prot;
+            unsigned long flags;
+            unsigned long fd;
+            unsigned long offset;
+        } args = {
+            .addr = 0,
+            .len = sysconf(_SC_PAGE_SIZE),
+            .prot = PROT_READ | PROT_WRITE,
+            .flags = MAP_ANONYMOUS | MAP_SHARED,
+            .fd = -1UL,
+            .offset = 0,
+        };
+        child_addr_t argp = (child->regs.gprs[15] - sizeof(args)) & ~7UL;
+        int err;
+
+        err = ptrace_memcpy_to_child(child, argp, &args, sizeof(args));
+        if (err < 0)
+            return err;
+
+        scratch_page = ptrace_remote_syscall(child, mmap_syscall, argp,
+                                             0, 0, 0, 0, 0);
+        goto check_result;
+    }
+#endif
+
     scratch_page = ptrace_remote_syscall(child, mmap_syscall, 0,
                                          sysconf(_SC_PAGE_SIZE), PROT_READ | PROT_WRITE,
                                          MAP_ANONYMOUS | MAP_SHARED, -1, 0);
     //MAP_ANONYMOUS|MAP_PRIVATE, -1, 0);
 
+check_result:
     if (scratch_page > (unsigned long) - 1000) {
         return -(signed long)scratch_page;
     }
