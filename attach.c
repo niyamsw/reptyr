@@ -229,21 +229,31 @@ int mmap_scratch(struct ptrace_child *child, child_addr_t *addr) {
 int grab_pid(pid_t pid, struct ptrace_child *child, child_addr_t *scratch) {
     int err;
 
+    debug("Attaching with ptrace to pid %d", pid);
     if (ptrace_attach_child(child, pid)) {
         err = child->error;
+        debug("ptrace_attach_child failed: %s", strerror(err));
         goto out;
     }
+    debug("Attached to pid %d", pid);
     if (ptrace_advance_to_state(child, ptrace_at_syscall)) {
         err = child->error;
+        debug("ptrace_advance_to_state(ptrace_at_syscall) failed: %s",
+              strerror(err));
         goto out;
     }
+    debug("Reached syscall-stop for pid %d", pid);
     if (ptrace_save_regs(child)) {
         err = child->error;
+        debug("ptrace_save_regs failed: %s", strerror(err));
         goto out;
     }
+    debug("Saved registers for pid %d", pid);
 
-    if ((err = mmap_scratch(child, scratch)))
+    if ((err = mmap_scratch(child, scratch))) {
+        debug("mmap_scratch failed: %s", strerror(-err));
         goto out_restore_regs;
+    }
 
     return 0;
 

@@ -242,6 +242,8 @@ unsigned long ptrace_remote_syscall(struct ptrace_child *child,
                                     unsigned long p2, unsigned long p3,
                                     unsigned long p4, unsigned long p5) {
     unsigned long rv;
+    debug("Injecting remote syscall %lu(%#lx, %#lx, %#lx, %#lx, %#lx, %#lx) into pid %d",
+          sysno, p0, p1, p2, p3, p4, p5, child->pid);
     if (ptrace_advance_to_state(child, ptrace_at_syscall) < 0)
         return -1;
 
@@ -277,6 +279,7 @@ unsigned long ptrace_remote_syscall(struct ptrace_child *child,
         return -1;
 
     rv = *ptr(&regs, (personality(child)->syscall_rv));
+    debug("Remote syscall %lu returned %#lx", sysno, rv);
 
     setreg(reg_ip, *(unsigned long*)((void*)&child->regs + personality(child)->reg_ip));
 
