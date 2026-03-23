@@ -13,18 +13,26 @@ static struct ptrace_personality arch_personality[1] = {
 
 static inline void arch_fixup_regs(struct ptrace_child *child) {
     child->regs.psw.addr -= S390_SYSCALL_SIZE;
+    child->saved_syscall = child->regs.gprs[2];
     child->regs.gprs[2] = child->regs.orig_gpr2;
 }
 
 static inline int arch_set_syscall(struct ptrace_child *child,
                                    unsigned long sysno) {
-    return ptrace_command(child, PTRACE_POKEUSER, PT_GPR2, sysno);
+    s390_regs regs;
+    struct iovec reg_iovec = {
+        .iov_base = &regs,
+        .iov_len = sizeof(regs)
+    };
+
+    if (ptrace_command(child, PTRACE_GETREGSET, NT_PRSTATUS, &reg_iovec) < 0)
+        return -1;
+
+    regs.gprs[2] = sysno;
+    return ptrace_command(child, PTRACE_SETREGSET, NT_PRSTATUS, &reg_iovec);
 }
 
 static inline int arch_save_syscall(struct ptrace_child *child) {
-    child->saved_syscall = ptrace_command(child, PTRACE_PEEKUSER, PT_GPR2);
-    if (child->error)
-        return -1;
     return 0;
 }
 
