@@ -23,6 +23,7 @@
 #ifdef __linux__
 
 #include <elf.h>
+#include "../../reptyr.h"
 #include "../../ptrace.h"
 #include "../platform.h"
 
