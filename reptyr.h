@@ -20,6 +20,8 @@
  * THE SOFTWARE.
  */
 
+#include <sys/types.h>
+
 #define REPTYR_VERSION "0.10.0"
 
 #define assert_nonzero(expr) ({                         \
