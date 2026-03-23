@@ -318,6 +318,8 @@ int attach_child(pid_t pid, const char *pty, int force_stdio) {
     long page_size = sysconf(_SC_PAGE_SIZE);
 #ifdef __linux__
     char stat_path[PATH_MAX];
+    uid_t target_uid;
+    struct stat pty_st;
 #endif
 
     if ((err = check_pgroup(pid))) {
@@ -337,6 +339,16 @@ int attach_child(pid_t pid, const char *pty, int force_stdio) {
             return err;
         }
     }
+
+#ifdef __linux__
+    if (geteuid() == 0) {
+        if ((err = read_uid(pid, &target_uid)) == 0 &&
+                stat(pty, &pty_st) == 0 &&
+                chown(pty, target_uid, pty_st.st_gid) == 0) {
+            debug("Changed ownership of %s to uid %d", pty, (int)target_uid);
+        }
+    }
+#endif
 
 #ifdef __linux__
     snprintf(stat_path, sizeof stat_path, "/proc/%d/stat", pid);
