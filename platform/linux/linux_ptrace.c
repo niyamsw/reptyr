@@ -82,6 +82,8 @@ static struct ptrace_personality *personality(struct ptrace_child *child);
 #include "arch/arm.h"
 #elif defined(__aarch64__)
 #include "arch/aarch64.h"
+#elif defined(__s390x__)
+#include "arch/s390x.h"
 #elif defined(__powerpc__)
 #include "arch/powerpc.h"
 #elif defined(__riscv) && __riscv_xlen == 64

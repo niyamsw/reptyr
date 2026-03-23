@@ -28,6 +28,9 @@
 #ifdef __riscv
 #include <asm/ptrace.h>
 #endif
+#ifdef __s390x__
+#include <asm/ptrace.h>
+#endif
 #include <sys/ptrace.h>
 #include <sys/types.h>
 #include <sys/user.h>
@@ -79,6 +82,8 @@ struct ptrace_child {
     struct user_regs regs;
 #elif defined(__powerpc__)
     struct pt_regs regs;
+#elif defined(__s390x__)
+    s390_regs regs;
 #else
     struct user_regs_struct regs;
 #endif
